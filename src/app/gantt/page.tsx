@@ -1,15 +1,13 @@
 "use client";
 
-import { useStreams } from "@/hooks/useStreams";
-import { useTasks } from "@/hooks/useTasks";
+import { useData } from "@/hooks/DataProvider";
 import { GanttChart } from "@/components/gantt/GanttChart";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GanttPage() {
-  const { streams, loading: streamsLoading } = useStreams();
-  const { tasks, loading: tasksLoading } = useTasks();
+  const { streams, tasks, loading } = useData();
 
-  if (streamsLoading || tasksLoading) {
+  if (loading) {
     return <Skeleton className="h-[600px]" />;
   }
 

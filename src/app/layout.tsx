@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/AppShell";
+import { DataProvider } from "@/hooks/DataProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,7 +41,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TooltipProvider>
-            <AppShell>{children}</AppShell>
+            <DataProvider>
+              <AppShell>{children}</AppShell>
+            </DataProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>

@@ -1,22 +1,15 @@
 "use client";
 
-import { useStreams } from "@/hooks/useStreams";
-import { useTasks } from "@/hooks/useTasks";
-import { useQuestions } from "@/hooks/useQuestions";
+import { useData } from "@/hooks/DataProvider";
 import { QuestionsList } from "@/components/risks/QuestionsList";
 import { RiskMatrix } from "@/components/risks/RiskMatrix";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RisksPage() {
-  const { streams, loading: streamsLoading } = useStreams();
-  const { tasks, loading: tasksLoading } = useTasks();
-  const {
-    questions,
-    loading: questionsLoading,
-    updateQuestionStatus,
-  } = useQuestions();
+  const { streams, tasks, questions, loading, updateQuestionStatus } =
+    useData();
 
-  if (streamsLoading || tasksLoading || questionsLoading) {
+  if (loading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-64" />

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useStreams } from "@/hooks/useStreams";
-import { useTasks } from "@/hooks/useTasks";
+import { useData } from "@/hooks/DataProvider";
 import { TaskFilters } from "@/components/tasks/TaskFilters";
 import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
@@ -12,9 +11,8 @@ import { Plus } from "lucide-react";
 import type { Task } from "@/lib/types";
 
 export default function TasksPage() {
-  const { streams, loading: streamsLoading } = useStreams();
-  const { tasks, loading: tasksLoading, updateTask, createTask, deleteTask } =
-    useTasks();
+  const { streams, tasks, loading, updateTask, createTask, deleteTask } =
+    useData();
 
   const [selectedStream, setSelectedStream] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -65,16 +63,12 @@ export default function TasksPage() {
     setDialogOpen(true);
   }
 
-  function handleDelete(taskId: string) {
-    deleteTask(taskId);
-  }
-
   function handleNew() {
     setEditingTask(null);
     setDialogOpen(true);
   }
 
-  if (streamsLoading || tasksLoading) {
+  if (loading) {
     return <Skeleton className="h-[600px]" />;
   }
 
@@ -110,7 +104,7 @@ export default function TasksPage() {
         tasks={filteredTasks}
         onUpdateTask={updateTask}
         onEditTask={handleEdit}
-        onDeleteTask={handleDelete}
+        onDeleteTask={deleteTask}
       />
       <TaskDialog
         open={dialogOpen}
