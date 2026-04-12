@@ -7,6 +7,7 @@ import {
   GanttChart,
   ListTodo,
   AlertTriangle,
+  Layers,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/gantt", label: "Cronograma", icon: GanttChart },
   { href: "/tasks", label: "Tarefas", icon: ListTodo },
   { href: "/risks", label: "Riscos & Questões", icon: AlertTriangle },
+  { href: "/streams", label: "Streams", icon: Layers },
 ];
 
 interface SidebarProps {

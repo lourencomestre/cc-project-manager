@@ -143,6 +143,7 @@ export function TaskTable({
                       min={0}
                       max={100}
                       value={task.completion_pct}
+                      disabled={task.status === "Not Started" || task.status === "Done"}
                       onChange={(e) =>
                         onUpdateTask(task.id, {
                           completion_pct: Math.min(

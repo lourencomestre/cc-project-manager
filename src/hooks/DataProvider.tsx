@@ -20,6 +20,9 @@ interface DataContextValue {
   createTask: (task: Omit<Task, "created_at" | "updated_at">) => Promise<boolean>;
   deleteTask: (taskId: string) => Promise<boolean>;
   updateQuestionStatus: (questionId: number, status: Question["status"]) => Promise<boolean>;
+  createStream: (stream: Omit<Stream, "id">) => Promise<boolean>;
+  updateStream: (streamId: number, updates: Partial<Stream>) => Promise<boolean>;
+  deleteStream: (streamId: number) => Promise<boolean>;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -32,17 +35,18 @@ export function useData() {
 
 function syncStatusAndCompletion(updates: Partial<Task>, current: Task): Partial<Task> {
   const merged = { ...updates };
+  const newStatus = merged.status ?? current.status;
 
-  if (merged.status === "Done" && (merged.completion_pct ?? current.completion_pct) < 100) {
+  if (newStatus === "Done") {
     merged.completion_pct = 100;
   }
 
-  if (merged.completion_pct === 100 && (merged.status ?? current.status) !== "Done") {
-    merged.status = "Done";
+  if (newStatus === "Not Started") {
+    merged.completion_pct = 0;
   }
 
-  if (merged.status && merged.status !== "Done" && (merged.completion_pct ?? current.completion_pct) === 100) {
-    merged.completion_pct = current.completion_pct < 100 ? current.completion_pct : 0;
+  if (merged.completion_pct === 100 && newStatus !== "Done") {
+    merged.status = "Done";
   }
 
   return merged;
@@ -82,6 +86,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
+  // --- Tasks ---
+
   const updateTask = useCallback(async (taskId: string, rawUpdates: Partial<Task>) => {
     const current = tasks.find((t) => t.id === taskId);
     if (!current) return false;
@@ -93,10 +99,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
-        .from("tasks")
-        .update(updates)
-        .eq("id", taskId);
+      const { error } = await supabase.from("tasks").update(updates).eq("id", taskId);
       if (error) return false;
     }
 
@@ -128,16 +131,55 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
+  // --- Questions ---
+
   const updateQuestionStatus = useCallback(async (questionId: number, status: Question["status"]) => {
     setQuestions((prev) =>
       prev.map((q) => (q.id === questionId ? { ...q, status } : q))
     );
 
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
-        .from("questions")
-        .update({ status })
-        .eq("id", questionId);
+      const { error } = await supabase.from("questions").update({ status }).eq("id", questionId);
+      if (error) return false;
+    }
+
+    return true;
+  }, []);
+
+  // --- Streams ---
+
+  const createStream = useCallback(async (stream: Omit<Stream, "id">) => {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.from("streams").insert(stream).select().single();
+      if (error || !data) return false;
+      setStreams((prev) => [...prev, data].sort((a, b) => a.display_order - b.display_order));
+    } else {
+      const newId = Math.max(0, ...streams.map((s) => s.id)) + 1;
+      setStreams((prev) => [...prev, { ...stream, id: newId }].sort((a, b) => a.display_order - b.display_order));
+    }
+
+    return true;
+  }, [streams]);
+
+  const updateStream = useCallback(async (streamId: number, updates: Partial<Stream>) => {
+    setStreams((prev) =>
+      prev.map((s) => (s.id === streamId ? { ...s, ...updates } : s))
+        .sort((a, b) => a.display_order - b.display_order)
+    );
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from("streams").update(updates).eq("id", streamId);
+      if (error) return false;
+    }
+
+    return true;
+  }, []);
+
+  const deleteStream = useCallback(async (streamId: number) => {
+    setStreams((prev) => prev.filter((s) => s.id !== streamId));
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from("streams").delete().eq("id", streamId);
       if (error) return false;
     }
 
@@ -155,6 +197,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         createTask,
         deleteTask,
         updateQuestionStatus,
+        createStream,
+        updateStream,
+        deleteStream,
       }}
     >
       {children}
