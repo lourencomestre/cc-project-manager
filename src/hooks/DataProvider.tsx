@@ -23,6 +23,7 @@ interface DataContextValue {
   createStream: (stream: Omit<Stream, "id">) => Promise<boolean>;
   updateStream: (streamId: number, updates: Partial<Stream>) => Promise<boolean>;
   deleteStream: (streamId: number) => Promise<boolean>;
+  reorderStreams: (orderedIds: number[]) => Promise<boolean>;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -195,6 +196,27 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
+  const reorderStreams = useCallback(async (orderedIds: number[]) => {
+    setStreams((prev) => {
+      const map = new Map(prev.map((s) => [s.id, s]));
+      return orderedIds
+        .map((id, i) => {
+          const s = map.get(id);
+          return s ? { ...s, display_order: i + 1 } : null;
+        })
+        .filter((s): s is Stream => s !== null);
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      const updates = orderedIds.map((id, i) =>
+        supabase!.from("streams").update({ display_order: i + 1 }).eq("id", id)
+      );
+      await Promise.all(updates);
+    }
+
+    return true;
+  }, []);
+
   return (
     <DataContext.Provider
       value={{
@@ -209,6 +231,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         createStream,
         updateStream,
         deleteStream,
+        reorderStreams,
       }}
     >
       {children}
