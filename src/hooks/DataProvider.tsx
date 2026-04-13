@@ -150,16 +150,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const createStream = useCallback(async (stream: Omit<Stream, "id">) => {
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.from("streams").insert(stream).select().single();
-      if (error || !data) return false;
+      const { data, error } = await supabase
+        .from("streams")
+        .insert(stream)
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("Failed to create stream:", error);
+        return false;
+      }
       setStreams((prev) => [...prev, data].sort((a, b) => a.display_order - b.display_order));
     } else {
-      const newId = Math.max(0, ...streams.map((s) => s.id)) + 1;
-      setStreams((prev) => [...prev, { ...stream, id: newId }].sort((a, b) => a.display_order - b.display_order));
+      setStreams((prev) => {
+        const newId = Math.max(0, ...prev.map((s) => s.id)) + 1;
+        return [...prev, { ...stream, id: newId }].sort((a, b) => a.display_order - b.display_order);
+      });
     }
 
     return true;
-  }, [streams]);
+  }, []);
 
   const updateStream = useCallback(async (streamId: number, updates: Partial<Stream>) => {
     setStreams((prev) =>

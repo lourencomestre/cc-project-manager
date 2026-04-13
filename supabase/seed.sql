@@ -193,3 +193,9 @@ INSERT INTO questions (stream_id, text, status) VALUES
 
 -- Gestão Operacional
 (12, 'Faz sentido equipas segregadas Motoristas/Lojas?', 'Aberta');
+
+-- ==========================================
+-- Fix sequences after explicit ID inserts
+-- ==========================================
+SELECT setval('streams_id_seq', (SELECT MAX(id) FROM streams));
+SELECT setval('questions_id_seq', (SELECT MAX(id) FROM questions));

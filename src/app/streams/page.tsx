@@ -39,11 +39,13 @@ export default function StreamsPage() {
     setDialogOpen(true);
   }
 
-  function handleSave(data: Omit<Stream, "id">) {
+  async function handleSave(data: Omit<Stream, "id">) {
     if (editingStream) {
-      updateStream(editingStream.id, data);
+      const ok = await updateStream(editingStream.id, data);
+      if (!ok) alert("Erro ao atualizar stream.");
     } else {
-      createStream(data);
+      const ok = await createStream(data);
+      if (!ok) alert("Erro ao criar stream. Verifica a consola.");
     }
   }
 
