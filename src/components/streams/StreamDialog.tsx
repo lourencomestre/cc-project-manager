@@ -41,12 +41,15 @@ function StreamDialogForm({
   const isEditing = !!stream;
   const [name, setName] = useState(stream?.name ?? "");
   const [color, setColor] = useState(stream?.color ?? "#3B82F6");
-  const [order, setOrder] = useState(stream?.display_order ?? nextOrder);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name: name.trim(), color, display_order: order });
+    onSave({
+      name: name.trim(),
+      color,
+      display_order: stream?.display_order ?? nextOrder,
+    });
     onClose();
   }
 
@@ -93,18 +96,6 @@ function StreamDialogForm({
             className="h-8 w-24 font-mono text-xs"
           />
         </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="stream-order" className="text-xs">Ordem</Label>
-        <Input
-          id="stream-order"
-          type="number"
-          min={1}
-          value={order}
-          onChange={(e) => setOrder(Number(e.target.value))}
-          className="h-8 w-20 text-sm"
-        />
       </div>
 
       <DialogFooter>
