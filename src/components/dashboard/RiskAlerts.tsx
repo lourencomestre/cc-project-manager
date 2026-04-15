@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { isOverdue, isAtRisk, formatDate } from "@/lib/utils";
+import { isOverdue, isAtRisk, formatDate, getTaskIndex } from "@/lib/utils";
 import type { Task, Stream } from "@/lib/types";
 
 interface RiskAlertsProps {
@@ -55,7 +55,7 @@ export function RiskAlerts({ tasks, streams }: RiskAlertsProps) {
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate">
-                  <span className="font-mono text-muted-foreground">{task.id}</span>{" "}
+                  <span className="font-mono text-muted-foreground">{getTaskIndex(task, tasks, streams)}</span>{" "}
                   {task.name}
                 </p>
                 <p className="text-muted-foreground">

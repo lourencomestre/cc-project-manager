@@ -8,7 +8,7 @@ import {
 } from "date-fns";
 import { pt } from "date-fns/locale";
 import { GO_LIVE_DATE } from "./types";
-import type { Task } from "./types";
+import type { Task, Stream } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -61,6 +61,20 @@ export function getStatusColor(status: Task["status"]): string {
     case "Blocked":
       return "bg-red-500";
   }
+}
+
+export function getTaskIndex(
+  task: Task,
+  tasks: Task[],
+  streams: Stream[]
+): string {
+  const streamIdx = streams.findIndex((s) => s.id === task.stream_id);
+  if (streamIdx === -1) return "?";
+  const streamTasks = tasks
+    .filter((t) => t.stream_id === task.stream_id)
+    .sort((a, b) => a.position - b.position);
+  const taskIdx = streamTasks.findIndex((t) => t.id === task.id);
+  return `${streamIdx + 1}.${taskIdx + 1}`;
 }
 
 export function getStatusBadgeVariant(

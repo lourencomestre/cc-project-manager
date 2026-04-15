@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle } from "lucide-react";
-import { formatDate, getStatusBadgeVariant } from "@/lib/utils";
+import { formatDate, getStatusBadgeVariant, getTaskIndex } from "@/lib/utils";
 import { STATUS_LABELS } from "@/lib/types";
 import type { Stream, Task } from "@/lib/types";
 
@@ -80,9 +80,9 @@ export function RiskMatrix({ streams, tasks }: RiskMatrixProps) {
                 {riskTasks.map((task) => (
                   <TableRow key={task.id}>
                     <TableCell className="font-mono text-xs">
-                      {task.id}
+                      {getTaskIndex(task, tasks, streams)}
                     </TableCell>
-                    <TableCell className="text-sm">{task.name}</TableCell>
+                    <TableCell className="text-xs">{task.name}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         <div

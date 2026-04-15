@@ -14,7 +14,7 @@ import { pt } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Diamond, ZoomIn, ZoomOut } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTaskIndex } from "@/lib/utils";
 import { PROJECT_START, PROJECT_END, STATUS_LABELS } from "@/lib/types";
 import type { Stream, Task } from "@/lib/types";
 
@@ -134,7 +134,7 @@ export function GanttChart({ streams, tasks }: GanttChartProps) {
           {streams.map((stream) => {
             const streamTasks = tasks
               .filter((t) => t.stream_id === stream.id)
-              .sort((a, b) => (a.start_date ?? "").localeCompare(b.start_date ?? ""));
+              .sort((a, b) => a.position - b.position);
 
             if (streamTasks.length === 0) return null;
 
@@ -162,6 +162,7 @@ export function GanttChart({ streams, tasks }: GanttChartProps) {
                 {/* Task rows */}
                 {streamTasks.map((task) => {
                   const bar = getBarPosition(task.start_date, task.end_date);
+                  const index = getTaskIndex(task, tasks, streams);
 
                   return (
                     <div
@@ -171,7 +172,7 @@ export function GanttChart({ streams, tasks }: GanttChartProps) {
                       <div className="w-56 shrink-0 border-r border-border px-3 py-1">
                         <p className="truncate text-[11px]">
                           <span className="font-mono text-muted-foreground">
-                            {task.id}
+                            {index}
                           </span>{" "}
                           {task.name}
                         </p>

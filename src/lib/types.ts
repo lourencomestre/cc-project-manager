@@ -6,8 +6,9 @@ export interface Stream {
 }
 
 export interface Task {
-  id: string;
+  id: number;
   stream_id: number;
+  position: number;
   name: string;
   owner: string;
   type: "Sugestão" | "Desafio" | "Opinião";

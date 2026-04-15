@@ -22,7 +22,6 @@ import { STATUS_OPTIONS, STATUS_LABELS } from "@/lib/types";
 import type { Stream, Task } from "@/lib/types";
 
 type TaskFormData = {
-  id: string;
   stream_id: number;
   name: string;
   owner: string;
@@ -39,7 +38,6 @@ type TaskFormData = {
 };
 
 const emptyForm: TaskFormData = {
-  id: "",
   stream_id: 1,
   name: "",
   owner: "MNP",
@@ -57,7 +55,6 @@ const emptyForm: TaskFormData = {
 
 function taskToForm(task: Task): TaskFormData {
   return {
-    id: task.id,
     stream_id: task.stream_id,
     name: task.name,
     owner: task.owner,
@@ -95,7 +92,7 @@ function TaskDialogForm({
 }) {
   const isEditing = !!task;
   const [form, setForm] = useState<TaskFormData>(
-    task ? taskToForm(task) : emptyForm
+    task ? taskToForm(task) : { ...emptyForm, stream_id: streams[0]?.id ?? 1 }
   );
 
   const set = <K extends keyof TaskFormData>(key: K, value: TaskFormData[K]) =>
@@ -103,45 +100,32 @@ function TaskDialogForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.id.trim() || !form.name.trim()) return;
+    if (!form.name.trim()) return;
     onSave(form);
     onClose();
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="task-id" className="text-xs">ID</Label>
-          <Input
-            id="task-id"
-            value={form.id}
-            onChange={(e) => set("id", e.target.value)}
-            placeholder="Ex: 1.8"
-            disabled={isEditing}
-            className="h-8 text-sm"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="task-stream" className="text-xs">Stream</Label>
-          <Select
-            value={String(form.stream_id)}
-            onValueChange={(v: string | null) => {
-              if (v) set("stream_id", Number(v));
-            }}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {streams.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="task-stream" className="text-xs">Stream</Label>
+        <Select
+          value={String(form.stream_id)}
+          onValueChange={(v: string | null) => {
+            if (v) set("stream_id", Number(v));
+          }}
+        >
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {streams.map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-1.5">
@@ -152,6 +136,7 @@ function TaskDialogForm({
           onChange={(e) => set("name", e.target.value)}
           placeholder="Descrição da tarefa"
           className="h-8 text-sm"
+          autoFocus
         />
       </div>
 

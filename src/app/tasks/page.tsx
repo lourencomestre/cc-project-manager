@@ -8,6 +8,7 @@ import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { getTaskIndex } from "@/lib/utils";
 import type { Task } from "@/lib/types";
 
 export default function TasksPage() {
@@ -33,16 +34,20 @@ export default function TasksPage() {
         return false;
       if (selectedRisk === "yes" && !task.has_risk) return false;
       if (selectedRisk === "no" && task.has_risk) return false;
-      if (
-        searchQuery &&
-        !task.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !task.id.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-        return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const index = getTaskIndex(task, tasks, streams);
+        if (
+          !task.name.toLowerCase().includes(q) &&
+          !index.includes(q)
+        )
+          return false;
+      }
       return true;
     });
   }, [
     tasks,
+    streams,
     selectedStream,
     selectedStatus,
     selectedOwner,
@@ -50,7 +55,7 @@ export default function TasksPage() {
     searchQuery,
   ]);
 
-  function handleSave(data: Omit<Task, "created_at" | "updated_at">) {
+  function handleSave(data: Omit<Task, "id" | "position" | "created_at" | "updated_at">) {
     if (editingTask) {
       updateTask(editingTask.id, data);
     } else {
@@ -102,6 +107,7 @@ export default function TasksPage() {
       <TaskTable
         streams={streams}
         tasks={filteredTasks}
+        allTasks={tasks}
         onUpdateTask={updateTask}
         onEditTask={handleEdit}
         onDeleteTask={deleteTask}

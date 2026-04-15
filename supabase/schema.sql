@@ -11,13 +11,14 @@ CREATE TABLE streams (
 
 -- Tasks
 CREATE TABLE tasks (
-  id TEXT PRIMARY KEY,              -- "1.1", "2.3", etc.
+  id SERIAL PRIMARY KEY,
   stream_id INT REFERENCES streams(id),
+  position INT NOT NULL DEFAULT 0,
   name TEXT NOT NULL,
-  owner TEXT NOT NULL,              -- "MNP", "Cliente", "Cliente/MNP"
+  owner TEXT NOT NULL,
   type TEXT CHECK (type IN ('Sugestão', 'Desafio', 'Opinião')),
   has_risk BOOLEAN DEFAULT FALSE,
-  risk_impact TEXT,                 -- "Financeiro", "Operacional", etc.
+  risk_impact TEXT,
   start_date DATE,
   end_date DATE,
   duration_days INT DEFAULT 0,

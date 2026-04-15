@@ -16,9 +16,9 @@ interface DataContextValue {
   tasks: Task[];
   questions: Question[];
   loading: boolean;
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<boolean>;
-  createTask: (task: Omit<Task, "created_at" | "updated_at">) => Promise<boolean>;
-  deleteTask: (taskId: string) => Promise<boolean>;
+  updateTask: (taskId: number, updates: Partial<Task>) => Promise<boolean>;
+  createTask: (task: Omit<Task, "id" | "position" | "created_at" | "updated_at">) => Promise<boolean>;
+  deleteTask: (taskId: number) => Promise<boolean>;
   updateQuestionStatus: (questionId: number, status: Question["status"]) => Promise<boolean>;
   createStream: (stream: Omit<Stream, "id">) => Promise<boolean>;
   updateStream: (streamId: number, updates: Partial<Stream>) => Promise<boolean>;
@@ -66,7 +66,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (isSupabaseConfigured && supabase) {
         const [streamsRes, tasksRes, questionsRes] = await Promise.all([
           supabase.from("streams").select("*").order("display_order"),
-          supabase.from("tasks").select("*").order("id"),
+          supabase.from("tasks").select("*").order("stream_id").order("position"),
           supabase.from("questions").select("*").order("id"),
         ]);
 
@@ -89,7 +89,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // --- Tasks ---
 
-  const updateTask = useCallback(async (taskId: string, rawUpdates: Partial<Task>) => {
+  const updateTask = useCallback(async (taskId: number, rawUpdates: Partial<Task>) => {
     const current = tasks.find((t) => t.id === taskId);
     if (!current) return false;
 
@@ -107,21 +107,36 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, [tasks]);
 
-  const createTask = useCallback(async (task: Omit<Task, "created_at" | "updated_at">) => {
-    const now = new Date().toISOString();
-    const fullTask: Task = { ...task, created_at: now, updated_at: now };
+  const createTask = useCallback(async (task: Omit<Task, "id" | "position" | "created_at" | "updated_at">) => {
+    // Calculate next position within the stream
+    const streamTasks = tasks.filter((t) => t.stream_id === task.stream_id);
+    const nextPosition = streamTasks.length > 0
+      ? Math.max(...streamTasks.map((t) => t.position)) + 1
+      : 1;
 
-    setTasks((prev) => [...prev, fullTask]);
+    const now = new Date().toISOString();
 
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.from("tasks").insert(fullTask);
-      if (error) return false;
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert({ ...task, position: nextPosition })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("Failed to create task:", error);
+        return false;
+      }
+      setTasks((prev) => [...prev, data]);
+    } else {
+      const newId = tasks.length > 0 ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
+      const fullTask: Task = { ...task, id: newId, position: nextPosition, created_at: now, updated_at: now };
+      setTasks((prev) => [...prev, fullTask]);
     }
 
     return true;
-  }, []);
+  }, [tasks]);
 
-  const deleteTask = useCallback(async (taskId: string) => {
+  const deleteTask = useCallback(async (taskId: number) => {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
 
     if (isSupabaseConfigured && supabase) {

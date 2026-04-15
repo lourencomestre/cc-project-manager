@@ -24,21 +24,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Diamond, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { cn, formatDate, isOverdue } from "@/lib/utils";
+import { cn, formatDate, isOverdue, getTaskIndex } from "@/lib/utils";
 import { STATUS_LABELS, STATUS_OPTIONS } from "@/lib/types";
 import type { Stream, Task } from "@/lib/types";
 
 interface TaskTableProps {
   streams: Stream[];
   tasks: Task[];
-  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  allTasks: Task[];
+  onUpdateTask: (taskId: number, updates: Partial<Task>) => void;
   onEditTask: (task: Task) => void;
-  onDeleteTask: (taskId: string) => void;
+  onDeleteTask: (taskId: number) => void;
 }
 
 export function TaskTable({
   streams,
   tasks,
+  allTasks,
   onUpdateTask,
   onEditTask,
   onDeleteTask,
@@ -48,7 +50,7 @@ export function TaskTable({
       stream,
       tasks: tasks
         .filter((t) => t.stream_id === stream.id)
-        .sort((a, b) => a.id.localeCompare(b.id)),
+        .sort((a, b) => a.position - b.position),
     }))
     .filter((g) => g.tasks.length > 0);
 
@@ -57,7 +59,7 @@ export function TaskTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-16">ID</TableHead>
+            <TableHead className="w-12">#</TableHead>
             <TableHead>Tarefa</TableHead>
             <TableHead className="w-24">Owner</TableHead>
             <TableHead className="w-20">Tipo</TableHead>
@@ -85,106 +87,109 @@ export function TaskTable({
                   </div>
                 </TableCell>
               </TableRow>
-              {streamTasks.map((task) => (
-                <TableRow
-                  key={task.id}
-                  className={cn(
-                    isOverdue(task) && "bg-red-500/5",
-                    task.status === "Done" && "opacity-50"
-                  )}
-                >
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {task.id}
-                    {task.is_milestone && (
-                      <Diamond className="ml-1 inline h-3 w-3 fill-amber-400 text-amber-400" />
+              {streamTasks.map((task) => {
+                const index = getTaskIndex(task, allTasks, streams);
+                return (
+                  <TableRow
+                    key={task.id}
+                    className={cn(
+                      isOverdue(task) && "bg-red-500/5",
+                      task.status === "Done" && "opacity-50"
                     )}
-                  </TableCell>
-                  <TableCell className="max-w-xs">
-                    <p className="truncate text-sm">{task.name}</p>
-                    {task.has_risk && (
-                      <span className="text-[10px] text-amber-600">
-                        Risco: {task.risk_impact}
+                  >
+                    <TableCell className="font-mono text-[11px] text-muted-foreground">
+                      {index}
+                      {task.is_milestone && (
+                        <Diamond className="ml-1 inline h-3 w-3 fill-amber-400 text-amber-400" />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-xs leading-snug">{task.name}</p>
+                      {task.has_risk && (
+                        <span className="text-[10px] text-amber-600">
+                          Risco: {task.risk_impact}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {task.owner}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-[11px] text-muted-foreground">
+                        {task.type}
                       </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {task.owner}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-[11px] text-muted-foreground">
-                      {task.type}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={task.status}
-                      onValueChange={(value: string | null) => {
-                        if (value)
-                          onUpdateTask(task.id, {
-                            status: value as Task["status"],
-                          });
-                      }}
-                    >
-                      <SelectTrigger className="h-7 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {STATUS_LABELS[s]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={task.completion_pct}
-                      disabled={task.status === "Not Started" || task.status === "Done"}
-                      onChange={(e) =>
-                        onUpdateTask(task.id, {
-                          completion_pct: Math.min(
-                            100,
-                            Math.max(0, Number(e.target.value))
-                          ),
-                        })
-                      }
-                      className="h-7 w-14 text-center text-xs"
-                    />
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(task.start_date)}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(task.end_date)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-muted"
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={task.status}
+                        onValueChange={(value: string | null) => {
+                          if (value)
+                            onUpdateTask(task.id, {
+                              status: value as Task["status"],
+                            });
+                        }}
                       >
-                        <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEditTask(task)}>
-                          <Pencil className="mr-2 h-3.5 w-3.5" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => onDeleteTask(task.id)}
+                        <SelectTrigger className="h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {STATUS_LABELS[s]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={task.completion_pct}
+                        disabled={task.status === "Not Started" || task.status === "Done"}
+                        onChange={(e) =>
+                          onUpdateTask(task.id, {
+                            completion_pct: Math.min(
+                              100,
+                              Math.max(0, Number(e.target.value))
+                            ),
+                          })
+                        }
+                        className="h-7 w-14 text-center text-xs"
+                      />
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {formatDate(task.start_date)}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {formatDate(task.end_date)}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-muted"
                         >
-                          <Trash2 className="mr-2 h-3.5 w-3.5" />
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+                          <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEditTask(task)}>
+                            <Pencil className="mr-2 h-3.5 w-3.5" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => onDeleteTask(task.id)}
+                          >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </Fragment>
           ))}
         </TableBody>
